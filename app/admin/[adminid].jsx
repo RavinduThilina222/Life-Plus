@@ -22,7 +22,12 @@ export default function AdminPage() {
         <Text style={styles.idText}>Your User ID: {adminid}</Text>
         
           <TouchableOpacity
-                  onPress={()=>{router.push('admin/register_doctor')}}
+                  onPress={()=>{ router.push({
+                    pathname: `admin/register_doctor?adminid=${adminid}`,
+                    query: {
+                      adminid: adminid,
+                    },
+                  });}}
                   style={{
                     backgroundColor: '#2384f1',
                     paddingVertical: 14,
