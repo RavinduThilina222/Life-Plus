@@ -1,10 +1,10 @@
-import { View, Text, TextInput, TouchableOpacity, Pressable } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import Toast from 'react-native-toast-message';
-import { useRouter, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { db } from '../../configs/firebaseConfig';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function RegisterDoctor() {
   const router = useRouter();
@@ -103,115 +103,122 @@ export default function RegisterDoctor() {
         </TouchableOpacity>
         <Text style={{ color: 'black', fontSize: 24, fontWeight: '500' }}>Register Doctor</Text>
       </View>
-
-      <View style={{ flex: 1, marginTop: 30, paddingHorizontal: 20, gap: 20 }}>
-        <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066' }}>Select Type</Text>
-        <View style={{ flexDirection: 'row', gap: 20 }}>
-          {['Physiotherapist', 'Doctor'].map(type => (
-            <Pressable
-              key={type}
-              onPress={() => handleChange('doctor_type', type)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingHorizontal: 15,
-                paddingVertical: 8,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#003066',
-                backgroundColor: form.doctor_type === type ? '#003066' : 'white'
-              }}
-            >
-              <Text style={{
-                color: form.doctor_type === type ? 'white' : '#003066',
-                fontFamily: 'outfit_regular'
-              }}>
-                {type}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {['name', 'degree', 'speciality', 'reg_number'].map((field, index) => (
-          <TextInput
-            key={index}
-            placeholder={`Enter ${field === 'reg_number' ? 'registration number' : field}`}
-            placeholderTextColor="#999"
-            value={form[field]}
-            onChangeText={(text) => handleChange(field, text)}
-            style={{
-              backgroundColor: 'white',
-              paddingVertical: 12,
-              paddingHorizontal: 20,
-              borderRadius: 50,
-              borderWidth: 1,
-              borderColor: '#ccc',
-              fontSize: 16,
-              color: '#000',
-              fontFamily: 'outfit_regular'
-            }}
-          />
-        ))}
-
-        <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066' }}>
-          Select working hospitals/clinics
+      <ScrollView
+  style={{ flex: 1, marginTop: 30 }}
+  contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+  showsVerticalScrollIndicator={false}
+>
+  <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066', marginBottom:10 }}>Select Type</Text>
+  <View style={{ flexDirection: 'row', gap: 20 }}>
+    {['Physiotherapist', 'Doctor'].map(type => (
+      <Pressable
+        key={type}
+        onPress={() => handleChange('doctor_type', type)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 15,
+          paddingVertical: 8,
+          borderRadius: 20,
+          borderWidth: 1,
+          borderColor: '#003066',
+          backgroundColor: form.doctor_type === type ? '#003066' : 'white'
+        }}
+      >
+        <Text style={{
+          color: form.doctor_type === type ? 'white' : '#003066',
+          fontFamily: 'outfit_regular'
+        }}>
+          {type}
         </Text>
-        {['City hospital', 'Green Clinic', 'Sunrise medical center', 'Carewell hospital'].map((hospital) => (
-          <Pressable
-            key={hospital}
-            onPress={() => toggleHospital(hospital)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: 15,
-              paddingVertical: 10,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: '#003066',
-              backgroundColor: 'white',
-              marginBottom: 10
-            }}
-          >
-            <View style={{
-              width: 20,
-              height: 20,
-              marginRight: 10,
-              borderWidth: 2,
-              borderColor: '#003066',
-              borderRadius: 4,
-              backgroundColor: form.hospitals.includes(hospital) ? '#003066' : 'white',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              {form.hospitals.includes(hospital) && (
-                <Text style={{ color: 'white', fontWeight: 'bold' }}>✓</Text>
-              )}
-            </View>
-            <Text style={{
-              color: '#003066',
-              fontSize: 16,
-              fontFamily: 'outfit_regular'
-            }}>
-              {hospital}
-            </Text>
-          </Pressable>
-        ))}
+      </Pressable>
+    ))}
+  </View>
 
-        <TouchableOpacity
-          onPress={handleRegister}
-          style={{
-            backgroundColor: '#2384f1',
-            paddingVertical: 14,
-            paddingHorizontal: 60,
-            borderRadius: 30,
-            alignItems: 'center'
-          }}
-        >
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_bold' }}>
-            Register
-          </Text>
-        </TouchableOpacity>
+  {['name', 'degree', 'speciality', 'reg_number'].map((field, index) => (
+    <TextInput
+      key={index}
+      placeholder={`Enter ${field === 'reg_number' ? 'registration number' : field}`}
+      placeholderTextColor="#999"
+      value={form[field]}
+      onChangeText={(text) => handleChange(field, text)}
+      style={{
+        backgroundColor: 'white',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 50,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        fontSize: 16,
+        color: '#000',
+        fontFamily: 'outfit_regular',
+        marginTop: 20
+      }}
+    />
+  ))}
+
+  <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066', marginTop: 20 }}>
+    Select working hospitals/clinics
+  </Text>
+  {['City hospital', 'Green Clinic', 'Sunrise medical center', 'Carewell hospital'].map((hospital) => (
+    <Pressable
+      key={hospital}
+      onPress={() => toggleHospital(hospital)}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#003066',
+        backgroundColor: 'white',
+        marginBottom: 10,
+        marginTop: 10
+      }}
+    >
+      <View style={{
+        width: 20,
+        height: 20,
+        marginRight: 10,
+        borderWidth: 2,
+        borderColor: '#003066',
+        borderRadius: 4,
+        backgroundColor: form.hospitals.includes(hospital) ? '#003066' : 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        {form.hospitals.includes(hospital) && (
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>✓</Text>
+        )}
       </View>
+      <Text style={{
+        color: '#003066',
+        fontSize: 16,
+        fontFamily: 'outfit_regular'
+      }}>
+        {hospital}
+      </Text>
+    </Pressable>
+  ))}
+
+  <TouchableOpacity
+    onPress={handleRegister}
+    style={{
+      backgroundColor: '#2384f1',
+      paddingVertical: 14,
+      paddingHorizontal: 60,
+      borderRadius: 30,
+      alignItems: 'center',
+      marginTop: 20
+    }}
+  >
+    <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_bold' }}>
+      Register
+    </Text>
+  </TouchableOpacity>
+</ScrollView>
+
 
       <Toast />
     </View>

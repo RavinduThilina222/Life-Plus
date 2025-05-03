@@ -1,10 +1,10 @@
 
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
-import { db } from '../configs/firebaseConfig';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useRouter } from 'expo-router';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { db } from '../configs/firebaseConfig';
 
 
 export default function LoginPage() {
@@ -28,10 +28,17 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q); 
 
       if (!querySnapshot.empty) {
-        router.push({
-          pathname: '/admin/[adminid]',
-          params: { adminid: userId }
-        });
+        if(userId.includes('ADM')){
+          router.push({
+            pathname: '/admin/[adminid]',
+            params: { adminid: userId }
+          });
+        } else if(userId.includes('DOC')){
+          router.push({
+            pathname: '/doctor/[doctorid]',
+            params: { doctorid: userId }
+          });
+        }
       } else {
         Toast.show({
           type: 'error',
