@@ -49,7 +49,11 @@ export default function DoctorPage() {
     <View style={styles.patientCard}>
       <Text style={styles.patientText}>Patient ID: {item.user_id}</Text>
       <Text style={styles.patientText}>Name: {item.name}</Text>
-      <TouchableOpacity style={styles.viewRecordButton}>
+      <TouchableOpacity onPress={()=>
+           router.push({
+            pathname: `doctor/patient_details?patientid=${item.user_id}&doctorid=${doctorid}`,
+           })
+      } style={styles.viewRecordButton}>
         <Text style={styles.viewRecordButtonText}>View Record</Text>
       </TouchableOpacity>
     </View>
