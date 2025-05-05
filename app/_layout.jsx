@@ -1,10 +1,10 @@
 
-import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
-import { useEffect } from "react";
+import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
-import { toastConfig } from '../configs/toastConfig';
+import { useEffect } from "react";
 import Toast from 'react-native-toast-message';
+import { toastConfig } from '../configs/toastConfig';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +33,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" /> {/* Will be your splash/welcome screen */}
       <Stack.Screen name="login" /> {/* Login screen */}
       <Stack.Screen name="admin/[adminid]" /> {/* Admin screen with dynamic parameter */}
+      <Stack.Screen name="doctor/[doctorid]" /> 
       {/* <Stack.Screen name="dashboard" /> Dashboard if needed */}
     </Stack>
   );
