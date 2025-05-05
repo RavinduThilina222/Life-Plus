@@ -1,3 +1,4 @@
+import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
@@ -88,7 +89,7 @@ const pickVideo = async () => {
 
       console.log('FormData: ', data);
 
-      const response = await fetch('https://api.cloudinary.com/v1_1/dipz290mx/video/upload', {
+      const response = await axios.post('https://api.cloudinary.com/v1_1/dipz290mx/video/upload', {
         method: 'POST',
         body: data,
       });
