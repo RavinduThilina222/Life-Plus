@@ -1,3 +1,4 @@
+import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
@@ -75,12 +76,36 @@ export default function AdminPage() {
     }
   };
 
-  const pickVideo = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-        allowsEditing: true,
-        quality: 1,
+
+
+
+const pickVideo = async () => {
+  try {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    console.log('Response from ImagePicker:', result);
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      console.log('Selected asset: ', asset);
+
+      const data = new FormData();
+      data.append('file', {
+        uri: asset.uri,
+        type: 'video/mp4',
+        name: 'video.mp4',
+      });
+      data.append('upload_preset', 'exercises');
+
+      console.log('FormData: ', data);
+
+      const response = await axios.post('https://api.cloudinary.com/v1_1/dipz290mx/video/upload', {
+        method: 'POST',
+        body: data,
       });
 
       if (!result.canceled) {
