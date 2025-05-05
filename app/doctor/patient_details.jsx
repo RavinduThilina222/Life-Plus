@@ -8,7 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../configs/firebaseConfig';
 
@@ -149,9 +149,9 @@ const PatientDetails = () => {
               UTI: '.pdf',
               mimeType: 'application/pdf',
             });
-            Toast.show({ type: 'success', text1: 'Prescription PDF generated' });
+            ToastAndroid.show('Prescription PDF generated', ToastAndroid.SHORT);
           } else {
-            Toast.show({ type: 'error', text1: 'Sharing is not available on this device' });
+            ToastAndroid.show('Sharing is not available on the device', ToastAndroid.SHORT);
           }
         } else {
           // On Android, open with system PDF viewer
@@ -162,7 +162,7 @@ const PatientDetails = () => {
               flags: 1,
               type: 'application/pdf',
             });
-            Toast.show({ type: 'success', text1: 'Prescription PDF generated' });
+            ToastAndroid.show('PDF generated', ToastAndroid.SHORT);
           } catch (e) {
             console.error("Error opening PDF:", e);
             // Fallback to sharing if opening directly fails
@@ -176,11 +176,7 @@ const PatientDetails = () => {
       }
     } catch (error) {
       console.error('Error generating prescription PDF:', error);
-      Toast.show({ 
-        type: 'error', 
-        text1: 'Failed to generate PDF', 
-        text2: error.message || 'Unknown error' 
-      });
+      ToastAndroid.show('PDF generation process failed', ToastAndroid.SHORT);
     }
   };
 
@@ -201,7 +197,7 @@ const PatientDetails = () => {
         patient_id: patientid,
         prescription
       });
-      Toast.show({ type: 'success', text1: 'Prescription added' });
+      ToastAndroid.show('Prescription Added', ToastAndroid.SHORT);
       setPrescription('');
       fetchPrescriptions();
     } catch (error) {
@@ -212,7 +208,7 @@ const PatientDetails = () => {
   const handleDeletePrescription = async (id) => {
     try {
       await deleteDoc(doc(db, 'Prescription_Table', id));
-      Toast.show({ type: 'success', text1: 'Prescription deleted' });
+      ToastAndroid.show('Prescription Deleted', ToastAndroid.SHORT);
       fetchPrescriptions();
     } catch (error) {
       console.error('Error deleting prescription:', error);
@@ -223,7 +219,7 @@ const PatientDetails = () => {
     try {
       if (vitalsDocId) {
         await updateDoc(doc(db, 'Vitals_Table', vitalsDocId), vitals);
-        Toast.show({ type: 'success', text1: 'Vitals updated' });
+        ToastAndroid.show('Vitals Updated', ToastAndroid.SHORT);
       } else {
         const newDoc = await addDoc(collection(db, 'Vitals_Table'), {
           doctor_id: doctorid,
@@ -231,7 +227,7 @@ const PatientDetails = () => {
           ...vitals
         });
         setVitalsDocId(newDoc.id);
-        Toast.show({ type: 'success', text1: 'Vitals added' });
+        ToastAndroid.show('Vitals Added', ToastAndroid.SHORT);
       }
     } catch (error) {
       console.error('Error updating vitals:', error);
@@ -264,9 +260,9 @@ const PatientDetails = () => {
           exercises: assignedExercises
         });
   
-        Toast.show({ type: 'success', text1: 'Exercises updated' });
+        ToastAndroid.show('Exercises updated', ToastAndroid.SHORT);
       } else {
-        Toast.show({ type: 'error', text1: 'Patient not found' });
+        ToastAndroid.show('Error updating exercises', ToastAndroid.SHORT);
       }
     } catch (error) {
       console.error('Error updating exercises:', error);
@@ -276,7 +272,7 @@ const PatientDetails = () => {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <View style={{ padding: 20, backgroundColor: '#069ed3', flexDirection: 'row', gap: 10 }}>
+      <View style={{ padding: 20, backgroundColor: '#2384f1', flexDirection: 'row', gap: 10 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back-circle" size={24} color="black" />
         </TouchableOpacity>
@@ -320,7 +316,7 @@ const PatientDetails = () => {
             placeholder="Enter new prescription..."
           />
           <TouchableOpacity style={{ backgroundColor: '#5cda56', paddingVertical: 14, borderRadius: 30, alignItems: 'center', marginTop: 10 }} onPress={handleAddPrescription}>
-            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_regular' }}>
+            <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'outfit_bold' }}>
               Add Prescription
             </Text>
           </TouchableOpacity>
@@ -332,7 +328,7 @@ const PatientDetails = () => {
             alignItems: 'center',
             marginTop: 10
           }} onPress={handlePrintPrescription}>
-            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_regular' }}>
+            <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'outfit_bold' }}>
               Print Prescription
             </Text>
           </TouchableOpacity>
@@ -377,7 +373,7 @@ const PatientDetails = () => {
           })}
           <TouchableOpacity style={{ backgroundColor: '#5cda56', paddingVertical: 14, borderRadius: 30, alignItems: 'center', marginTop: 10
           }} onPress={handleUpdateVitals}>
-            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_regular' }}>
+            <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'outfit_bold' }}>
               Update Vitals
             </Text>
           </TouchableOpacity>
@@ -392,25 +388,38 @@ const PatientDetails = () => {
           <Text style={{ fontSize: 16, marginBottom: 5, marginTop: 10, fontFamily: 'outfit_regular' }}>
             Select Exercise
           </Text>
-          <Picker
-            selectedValue={selectedExerciseId}
-            onValueChange={(itemValue) => {
-              setSelectedExerciseId(itemValue);
-              handleAssignExercise();
-            }}
-            style={{ backgroundColor: '#ffffff', padding: 10, borderRadius: 10, fontSize: 16, marginBottom: 10, fontFamily: 'outfit_regular'
-            }}
-          >
-            <Picker.Item label="-- Select Exercise --" value="" />
-            {allExercises.map((exercise) => (
-              <Picker.Item
-                key={exercise.id}
-                label={exercise.video_name}
-                value={exercise.id}
-              />
-            ))}
-          </Picker>
-
+          <View style={{
+  backgroundColor: '#ffffff',
+  borderRadius: 10,
+  paddingBottom:2,
+  paddingHorizontal: 10,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  marginBottom: 10
+}}>
+  <Picker
+    selectedValue={selectedExerciseId}
+    onValueChange={(itemValue) => {
+      setSelectedExerciseId(itemValue);
+      handleAssignExercise();
+    }}
+    style={{
+      height: 60,
+      color: '#000', // This works
+    }}
+    dropdownIconColor="#003066" // Only Android
+  >
+    <Picker.Item label="-- Select Exercise --" value="" color="#999" />
+    {allExercises.map((exercise) => (
+      <Picker.Item
+        key={exercise.id}
+        label={exercise.video_name}
+        value={exercise.id}
+        color="#000" // Sets text color
+      />
+    ))}
+  </Picker>
+</View>
           {assignedExercises.map((exercise) => (
             <View key={exercise.id} style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#fff', padding: 10,  borderRadius: 8, marginBottom: 8, alignItems: 'center'
             }}>
@@ -422,7 +431,7 @@ const PatientDetails = () => {
           ))}
 
           <TouchableOpacity style={{ backgroundColor: '#5cda56', paddingVertical: 14, borderRadius: 30, alignItems: 'center', marginTop: 10 }} onPress={handleUpdateExercises}>
-            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_regular' }}>
+            <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'outfit_bold' }}>
               Update Exercises
             </Text>
           </TouchableOpacity>

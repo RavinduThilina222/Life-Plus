@@ -1,9 +1,8 @@
-import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, where, } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../configs/firebaseConfig';
@@ -26,12 +25,12 @@ export default function AdminPage() {
 
   const addNewAdmin = async () => {
     if (!adminName || !adminEmail || !registrationNumber) {
-      Toast.show({ type: 'success', text1: 'All Fields Are Required !' });
+      Toast.show({ type: 'error', text1: 'All Fields Are Required!' });
       return;
     }
-
+  
     const generatedId = uuidv4();
-
+  
     try {
       // Step 1: Add to User_Table
       await addDoc(collection(db, 'User_Table'), {
@@ -41,7 +40,7 @@ export default function AdminPage() {
         user_id: registrationNumber,
         user_type: 'ADMIN',
       });
-
+  
       // Step 2: Add to Admin_Table
       await addDoc(collection(db, 'Admin_Table'), {
         id: generatedId,
@@ -50,18 +49,18 @@ export default function AdminPage() {
         admin_name: adminName,
         admin_email: adminEmail,
       });
-
-      Toast.show({ type: 'success', text1: 'Admin Registered Successfully!' });
+  
       fetchAdmins();
       setAdminName('');
       setAdminEmail('');
       setRegistrationNumber('');
+      ToastAndroid.show('Admin registered successfully', ToastAndroid.SHORT);
     } catch (error) {
       console.error("Error adding admin: ", error);
-      Toast.show({ type: 'error', text1: 'Error Registering Admin!' });
+      ToastAndroid.show('Admin registration failed', ToastAndroid.SHORT);
     }
   };
-
+  
   const fetchAdmins = async () => {
     setLoading(true);
     try {
@@ -70,7 +69,7 @@ export default function AdminPage() {
       setAdmins(adminList);
     } catch (error) {
       console.error("Error fetching admins: ", error);
-      Toast.show({ type: 'error', text1: 'Error Fetching Admins!' });
+      ToastAndroid.show('Error fetching admins', ToastAndroid.SHORT);
     } finally {
       setLoading(false);
     }
@@ -79,38 +78,16 @@ export default function AdminPage() {
 
 
 
-const pickVideo = async () => {
-  try {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    console.log('Response from ImagePicker:', result);
-
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      console.log('Selected asset: ', asset);
-
-      const data = new FormData();
-      data.append('file', {
-        uri: asset.uri,
-        type: 'video/mp4',
-        name: 'video.mp4',
+  const pickVideo = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        quality: 1,
       });
-      data.append('upload_preset', 'exercises');
-
-      console.log('FormData: ', data);
-
-      const response = await axios.post('https://api.cloudinary.com/v1_1/dipz290mx/video/upload', {
-        method: 'POST',
-        body: data,
-      });
-
+  
       if (!result.canceled) {
         const asset = result.assets[0];
-
         const data = new FormData();
         data.append('file', {
           uri: asset.uri,
@@ -118,32 +95,32 @@ const pickVideo = async () => {
           name: 'video.mp4',
         });
         data.append('upload_preset', 'exercises');
-
+  
         const response = await fetch('https://api.cloudinary.com/v1_1/dipz290mx/video/upload', {
           method: 'POST',
           body: data,
         });
-
+  
         const uploadResult = await response.json();
-
+  
         if (uploadResult.secure_url) {
           setExerciseVideoLink(uploadResult.secure_url);
           setIsUploaded(true);
-          Toast.show({ type: 'success', text1: 'Video uploaded successfully!' });
+          ToastAndroid.show('Video uploaded successfully', ToastAndroid.SHORT);
         } else {
           console.error('Upload failed:', uploadResult);
-          Toast.show({ type: 'error', text1: 'Video upload failed!' });
+          ToastAndroid.show('Video upload failed', ToastAndroid.SHORT);
         }
       }
     } catch (error) {
       console.error('Error picking video:', error);
-      Toast.show({ type: 'error', text1: 'Error picking video!' });
+      ToastAndroid.show('Error picking video', ToastAndroid.SHORT);
     }
   };
-
+  
   const addExercise = async () => {
     if (!exerciseVideoName || !exerciseVideoLink) {
-      Toast.show({ type: 'error', text1: 'Please choose a video and provide a name!' });
+      ToastAndroid.show('Please choose a video and provide a name', ToastAndroid.SHORT);
       return;
     }
 
@@ -154,14 +131,14 @@ const pickVideo = async () => {
         uploaded_at: new Date(),
       });
 
-      Toast.show({ type: 'success', text1: 'Exercise Video Saved Successfully!' });
+      ToastAndroid.show('Video saved successfully', ToastAndroid.SHORT);
       alert('Exercise Video Saved Successfully!');
       setIsUploaded(false);
       setExerciseVideoName('');
       setExerciseVideoLink('');
     } catch (error) {
       console.error("Error saving video:", error);
-      Toast.show({ type: 'error', text1: 'Failed to save video in Firestore!' });
+      ToastAndroid.show('Error saving video, try again', ToastAndroid.SHORT);
     }
   };
 
@@ -171,20 +148,18 @@ const pickVideo = async () => {
         collection(db, 'Admin_Table'),
         where('user_id', '==', adminId)
       );
-  
       const snapshot = await getDocs(adminQuery);
-  
       if (!snapshot.empty) {
         const adminDoc = snapshot.docs[0]; // assuming user_id is unique
         await deleteDoc(doc(db, 'Admin_Table', adminDoc.id));
         setAdmins(admins.filter(admin => admin.user_id !== adminId));
-        Toast.show({ type: 'success', text1: 'Admin Removed Successfully!' });
+        ToastAndroid.show('Admin removed', ToastAndroid.SHORT);
       } else {
-        Toast.show({ type: 'error', text1: 'Admin Not Found!' });
+        ToastAndroid.show('Admin removed', ToastAndroid.SHORT);
       }
     } catch (error) {
       console.error("Error removing admin: ", error);
-      Toast.show({ type: 'error', text1: 'Error Removing Admin!' });
+      ToastAndroid.show('Error removing admin', ToastAndroid.SHORT);
     }
   };
 
@@ -214,7 +189,7 @@ const pickVideo = async () => {
           placeholderTextColor="#999"
           value={adminName}
           onChangeText={setAdminName}
-          style={styles.input}
+          style={[styles.input, {marginTop:10}]}
         />
         <TextInput
           placeholder="Email"
@@ -235,7 +210,7 @@ const pickVideo = async () => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionTitle}>Admins</Text>
+      <Text style={styles.sectionTitle}> Registered Admins</Text>
 
       <View style={styles.adminListContainer}>
         {admins.map((item) => (
@@ -252,7 +227,7 @@ const pickVideo = async () => {
       </View>
 
       {/* Upload Exercise Video Section */}
-      <View style={[styles.content, { borderTopColor: '#ccc', borderTopWidth: 1, marginTop: 30 }]}>
+      <View style={[styles.content]}>
         <Text style={[styles.sectionTitle, {marginBottom:20}]}>Upload Exercise Video</Text>
 
         <TextInput
@@ -298,7 +273,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 22,
-    fontWeight: 'bold',
     color: '#333',
     fontFamily: 'outfit_bold',
   },
@@ -306,9 +280,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   addAdminContainer:{
-    padding:15,
+    padding:16,
     backgroundColor:'#a6cdfe',
-    borderRadius:10
+    borderRadius:10,
+    display:'flex',
+    gap:5
   },
   registerDoctorBtn: {
     backgroundColor: '#5cda56',
@@ -330,7 +306,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginTop: 20,
     fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 12,
     color: '#333',
     fontFamily: 'outfit_bold',
@@ -358,19 +333,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginBottom:10
   },
   registerButton: {
     backgroundColor: '#5cda56',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
     fontFamily: 'outfit_bold',
   },
   adminListContainer: {

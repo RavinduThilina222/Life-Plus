@@ -1,7 +1,7 @@
 // app/index.js (The Welcome/Splash screen)
-import { View, Text, Image, Animated } from 'react-native';
-import React, { useRef, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Text, View } from 'react-native';
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -53,7 +53,6 @@ export default function WelcomePage() {
       <Text
         style={{
           fontSize: 50,
-          fontWeight: 'bold',
           color: '#023e55',
           fontFamily: 'cinzel',
         }}
