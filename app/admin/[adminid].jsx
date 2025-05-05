@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where, } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -142,9 +142,21 @@ export default function AdminPage() {
 
   const removeAdmin = async (adminId) => {
     try {
-      await deleteDoc(doc(db, 'Admin_Table', adminId));
-      setAdmins(admins.filter(admin => admin.id !== adminId));
-      Toast.show({ type: 'success', text1: 'Admin Removed Successfully!' });
+      const adminQuery = query(
+        collection(db, 'Admin_Table'),
+        where('user_id', '==', adminId)
+      );
+  
+      const snapshot = await getDocs(adminQuery);
+  
+      if (!snapshot.empty) {
+        const adminDoc = snapshot.docs[0]; // assuming user_id is unique
+        await deleteDoc(doc(db, 'Admin_Table', adminDoc.id));
+        setAdmins(admins.filter(admin => admin.user_id !== adminId));
+        Toast.show({ type: 'success', text1: 'Admin Removed Successfully!' });
+      } else {
+        Toast.show({ type: 'error', text1: 'Admin Not Found!' });
+      }
     } catch (error) {
       console.error("Error removing admin: ", error);
       Toast.show({ type: 'error', text1: 'Error Removing Admin!' });
@@ -206,7 +218,7 @@ export default function AdminPage() {
             <Text style={styles.adminName}>{item.admin_name}</Text>
             <TouchableOpacity
               style={styles.removeButton}
-              onPress={() => removeAdmin(item.id)}
+              onPress={() => removeAdmin(item.user_id)}
             >
               <Text style={styles.removeText}>Remove</Text>
             </TouchableOpacity>
@@ -215,8 +227,8 @@ export default function AdminPage() {
       </View>
 
       {/* Upload Exercise Video Section */}
-      <View style={[styles.content, { borderTopColor: '#0f0f0f', borderTopWidth: 1, marginTop: 30 }]}>
-        <Text style={styles.sectionTitle}>Upload Exercise Video</Text>
+      <View style={[styles.content, { borderTopColor: '#ccc', borderTopWidth: 1, marginTop: 30 }]}>
+        <Text style={[styles.sectionTitle, {marginBottom:20}]}>Upload Exercise Video</Text>
 
         <TextInput
           placeholder="Video Name"
@@ -250,94 +262,120 @@ export default function AdminPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
+    padding: 16,
   },
   header: {
-    padding: 20,
-    backgroundColor: '#069ed3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 20,
+    justifyContent: 'space-between',
   },
   headerText: {
-    color: 'black',
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'outfit_regular',
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'outfit_bold',
   },
   content: {
-    padding: 15,
-  },
-  addAdminContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#0f0f0f',
-    borderBottomWidth: 1,
-    borderBottomColor: '#0f0f0f',
-    margin: 20,
-  },
-  input: {
-    width: '100%',
-    backgroundColor: 'white',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    fontSize: 16,
-    color: '#000',
-    fontFamily: 'outfit_regular',
-    marginTop: 20,
-  },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-    alignItems: 'center',
-    marginTop: 20,
     marginBottom: 20,
-    backgroundColor: '#5cda56',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '400',
-    fontFamily: 'outfit_bold',
+  addAdminContainer:{
+    padding:15,
+    backgroundColor:'#a6cdfe',
+    borderRadius:10
   },
   registerDoctorBtn: {
     backgroundColor: '#5cda56',
     paddingVertical: 14,
-    marginTop: 10,
-    paddingHorizontal: 30,
-    borderRadius: 30,
+    borderRadius: 10,
     alignItems: 'center',
   },
+  section: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
+  },
   sectionTitle: {
-    fontFamily: 'outfit_bold',
-    fontSize: 28,
-    textAlign: 'center',
     marginTop: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+    fontFamily: 'outfit_bold',
+  },
+  input: {
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#000',
+    marginBottom: 12,
+    fontFamily: 'outfit_regular',
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 4,
+    fontFamily: 'outfit_regular',
+  },
+  button: {
+    backgroundColor: '#3478f6',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  registerButton: {
+    backgroundColor: '#5cda56',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'outfit_bold',
   },
   adminListContainer: {
-    marginHorizontal: 15,
+    marginTop: 10,
   },
   adminItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    backgroundColor: '#fff',
+    padding: 14,
+    marginBottom: 10,
+    borderRadius: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderColor: '#eee',
+    borderWidth: 1,
   },
   adminName: {
+    fontSize: 16,
+    color: '#333',
     fontFamily: 'outfit_regular',
-    fontSize: 18,
   },
   removeButton: {
-    backgroundColor: '#ff0000',
-    padding: 10,
-    paddingHorizontal:40,
-    borderRadius: 5,
+    backgroundColor: '#ff4d4f',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 6,
   },
   removeText: {
     color: '#fff',
+    fontSize: 14,
     fontFamily: 'outfit_regular',
-    fontSize: 16,
   },
 });
