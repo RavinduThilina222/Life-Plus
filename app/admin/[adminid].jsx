@@ -65,7 +65,6 @@ export default function AdminPage() {
 
 
 const pickVideo = async () => {
-  console.log('pickVideo function called');
   try {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
