@@ -97,11 +97,11 @@ export default function RegisterDoctor() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#ade8fe' }}>
-      <View style={{ padding: 20, backgroundColor: '#069ed3', flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+      <View style={{ padding: 20,  backgroundColor: '#2384f1', flexDirection: 'row', alignItems: 'center', gap: 20 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back-circle" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={{ color: 'black', fontSize: 24, fontWeight: '500' }}>Register Doctor</Text>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily:'outfit_regular'}}>Register Doctor</Text>
       </View>
       <ScrollView
   style={{ flex: 1, marginTop: 30 }}
@@ -213,7 +213,7 @@ export default function RegisterDoctor() {
       marginTop: 20
     }}
   >
-    <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_bold' }}>
+    <Text style={{ color: 'white', fontSize: 16, fontFamily: 'outfit_bold' }}>
       Register
     </Text>
   </TouchableOpacity>

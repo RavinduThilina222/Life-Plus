@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../configs/firebaseConfig';
 
@@ -26,10 +26,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     if (!userId.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'No User ID Found!',
-      });
+     ToastAndroid.show('No user ID found', ToastAndroid.SHORT);
       return;
     }
 
@@ -53,16 +50,10 @@ export default function LoginPage() {
           });
         }
       } else {
-        Toast.show({
-          type: 'error',
-          text1: 'User Not Found!',
-        });
+       ToastAndroid.show('User not found', ToastAndroid.SHORT);
       }
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Something Went Wrong!',
-      });
+      ToastAndroid.show('Something went wrong', ToastAndroid.SHORT);
       console.error("Login Error:", error);
     }
   };

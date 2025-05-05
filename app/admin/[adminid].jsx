@@ -3,8 +3,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, where, } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
-import Toast from 'react-native-toast-message';
-import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../configs/firebaseConfig';
 
 export default function AdminPage() {
@@ -25,31 +23,25 @@ export default function AdminPage() {
 
   const addNewAdmin = async () => {
     if (!adminName || !adminEmail || !registrationNumber) {
-      Toast.show({ type: 'error', text1: 'All Fields Are Required!' });
+      ToastAndroid.show('All fields are required', ToastAndroid.SHORT);
       return;
     }
   
-    const generatedId = uuidv4();
-  
     try {
-      // Step 1: Add to User_Table
-      await addDoc(collection(db, 'User_Table'), {
+      const userRef = await addDoc(collection(db, 'User_Table'), {
         created_at: new Date(),
         created_by: adminid,
-        id: generatedId,
         user_id: registrationNumber,
         user_type: 'ADMIN',
       });
-  
-      // Step 2: Add to Admin_Table
+      
       await addDoc(collection(db, 'Admin_Table'), {
-        id: generatedId,
         created_by: adminid,
         user_id: registrationNumber,
         admin_name: adminName,
         admin_email: adminEmail,
       });
-  
+      
       fetchAdmins();
       setAdminName('');
       setAdminEmail('');
