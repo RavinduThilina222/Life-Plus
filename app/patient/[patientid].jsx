@@ -1,21 +1,22 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { db } from '../../configs/firebaseConfig';
 
 const PatientDashboard = () => {
     const { patientid } = useLocalSearchParams();
 
     const [Patient, setPatient] = useState(null);
+    const [vitals, setVitals] = useState(null);
     const [loading, setLoading] = useState(true);
 
      const router = useRouter();
 
     useEffect(() => {
         fetchPatient();
+        fetchVitals();
       }, [patientid]);
-
 
       const fetchPatient = async () => {
         try {
@@ -39,13 +40,49 @@ const PatientDashboard = () => {
         }
       };
 
+      const fetchVitals = async () => {
+        try {
+          const q = query(
+            collection(db, 'Vitals_Table'),
+            where('patient_id', '==', patientid) // Match patientid with user_id
+          );
+          const querySnapshot = await getDocs(q);
+    
+          if (!querySnapshot.empty) {
+            const vitalsData = querySnapshot.docs[0].data(); // Assuming only one match
+            console.log('Vital data:', vitalsData);
+            setVitals(vitalsData);
+          } else {
+            console.error('No such patient found!');
+          }
+        } catch (error) {
+          console.error('Error fetching patient:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Patient Dashboard</Text>
       </View>
 
-      <Text style={{fontSize:24,fontWeight:'bold',fontFamily:'outfit_regular', margin:20}}> Welcome ! {Patient?.name} </Text>
+      <Text style={{
+        fontSize: 24,
+        fontFamily: 'outfit_bold',
+        color: '#003066',
+        margin: 20,
+      }}> Welcome ! {Patient?.name} </Text>
+
+      <Text style={{
+        fontSize: 18,
+        color: '#333',
+        marginLeft: 20,
+        fontFamily: 'outfit_bold'
+      }}>
+        Your ID is {Patient?.user_id}
+      </Text>
       
       <View style={styles.subContainer}>
         <Text style={styles.subContainerText}>Date you visited your therapist</Text>
@@ -72,22 +109,22 @@ const PatientDashboard = () => {
         justifyContent:'space-between',
         alignItems:'center',
         padding:20,
-        paddingBottom:0,
-        margin:20,
+        margin:10,
         height:150,
         borderRadius:20,
+        gap:5
       }}>
         <View style={styles.metricContainer}>
-            <Text style={{fontWeight:'bold',fontSize:13}}>Body Temperature</Text>
-            <Text style={{fontSize:16}}>98.4 F</Text>
+            <Text style={{fontWeight:'bold',fontSize:12}}>Body Temperature</Text>
+            <Text style={{fontSize:14}}>{vitals ? `${vitals.body_temperature} F` : 'Loading...'}</Text>
         </View>
         <View style={styles.metricContainer}>
-            <Text style={{fontWeight:'bold',fontSize:13}}>Blood Pressure</Text>
-            <Text style={{fontSize:16}}>120/80 mmHg</Text>
+            <Text style={{fontWeight:'bold',fontSize:12}}>Blood Pressure</Text>
+            <Text style={{fontSize:14}}>{vitals ? `${vitals.blood_pressure} mmHg` : 'Loading...'}</Text>
         </View>
         <View style={styles.metricContainer}>
-            <Text style={{fontWeight:'bold',fontSize:13}}>Blood Sugar</Text>
-            <Text style={{fontSize:16}}>98.4 F</Text>
+            <Text style={{fontWeight:'bold',fontSize:12}}>Blood Sugar</Text>
+            <Text style={{fontSize:14}}>{vitals ? `${vitals.blood_sugar} mg/dL` : 'Loading...'}</Text>
         </View>
 
       </View>
@@ -126,7 +163,7 @@ const PatientDashboard = () => {
 
       
       
-    </View>
+    </ScrollView>
   )
 }
 
@@ -144,8 +181,8 @@ const styles = StyleSheet.create({
       headerText: {
         color: 'black',
         fontSize: 24,
-        fontWeight: '800',
-        fontFamily: 'outfit_regular',
+        fontWeight: '500',
+        fontFamily: 'outfit_regular'
       },
       subContainer:{
         padding:20,

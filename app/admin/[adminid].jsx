@@ -104,8 +104,6 @@ export default function AdminPage() {
           ToastAndroid.show('Video upload failed', ToastAndroid.SHORT);
         }
       }
-    }
-  
     } catch (error) {
       console.error('Error picking video:', error);
       ToastAndroid.show('Error picking video', ToastAndroid.SHORT);
