@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, ToastAndroid, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../configs/firebaseConfig';
 
@@ -28,10 +28,7 @@ export default function RegisterPatient() {
     const { patient_id, name, age, mobile, blood_group, purpose, gender } = form;
 
     if (!patient_id || !name || !age || !mobile || !blood_group || !purpose) {
-      Toast.show({
-        type: 'error',
-        text1: 'All fields are required!',
-      });
+      ToastAndroid.show('All fields are required', ToastAndroid.SHORT);
       return;
     }
 
@@ -63,10 +60,7 @@ export default function RegisterPatient() {
 
       await addDoc(collection(db, 'Patient_Table'), newPatient);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Patient Registered Successfully!',
-      });
+      ToastAndroid.show('Registration success', ToastAndroid.SHORT);
 
       // Reset form
       setForm({
@@ -81,20 +75,17 @@ export default function RegisterPatient() {
 
     } catch (error) {
       console.error('Error adding patient: ', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to register patient.',
-      });
+      ToastAndroid.show('Failed to register patient', ToastAndroid.SHORT);
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ade8fe' }}>
-      <View style={{ padding: 20, backgroundColor: '#069ed3', flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+    <View style={{ flex: 1, backgroundColor: '#ade8fe'  }}>
+      <View style={{ padding: 20,  backgroundColor: '#2384f1', flexDirection: 'row', alignItems: 'center', gap: 20 }}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back-circle" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={{ color: 'black', fontSize: 24, fontWeight: '500' }}>Register Patient</Text>
+        <Text style={{ color: 'black', fontSize: 24, fontFamily: 'outfit_regular' }}>Register Patient</Text>
       </View>
 
       <ScrollView
@@ -102,6 +93,9 @@ export default function RegisterPatient() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
+          <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066', marginTop: 20 }}>
+          Complete All Fields
+        </Text>
         {[
           { key: 'patient_id', label: 'Patient Registration ID' },
           { key: 'name', label: 'Name' },
@@ -152,7 +146,7 @@ export default function RegisterPatient() {
           }}
         />
 
-        <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066', marginTop: 20 }}>
+        <Text style={{ fontSize: 16, fontFamily: 'outfit_bold', color: '#003066', marginTop: 20, marginBottom:2}}>
           Select Gender
         </Text>
         <View style={{ flexDirection: 'row', gap: 20, marginTop: 10 }}>
@@ -164,6 +158,7 @@ export default function RegisterPatient() {
                 flexDirection: 'row',
                 alignItems: 'center',
                 paddingHorizontal: 15,
+                width:150,
                 paddingVertical: 8,
                 borderRadius: 20,
                 borderWidth: 1,
@@ -192,7 +187,7 @@ export default function RegisterPatient() {
             marginTop: 30
           }}
         >
-          <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold', fontFamily: 'outfit_bold' }}>
+          <Text style={{ color: 'white', fontSize: 16, fontFamily: 'outfit_bold' }}>
             Register
           </Text>
         </TouchableOpacity>

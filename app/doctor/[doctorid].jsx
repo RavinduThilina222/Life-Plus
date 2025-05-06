@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: '#069ed3',
+    backgroundColor: '#ade8fe',
   },
   headerText: {
     color: 'black',
@@ -172,10 +172,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 5,
     alignItems: 'center',
+    marginTop: 5
   },
   viewRecordButtonText: {
     color: '#ffffff',
-    fontWeight: 'bold',
     fontFamily: 'outfit_regular'
   },
   registerButton: {
@@ -187,7 +187,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
-     fontFamily: 'outfit_regular'
+     fontFamily: 'outfit_bold'
   },
 });
