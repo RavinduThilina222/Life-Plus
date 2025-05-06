@@ -39,6 +39,12 @@ export default function LoginPage() {
             params: { doctorid: userId }
           });
         }
+        else if(userId.includes('PAT')){
+          router.push({
+            pathname: '/patient/[patientid]',
+            params: { patientid: userId }
+          });
+        } 
       } else {
         Toast.show({
           type: 'error',

@@ -135,6 +135,8 @@ const pickVideo = async () => {
           Toast.show({ type: 'error', text1: 'Video upload failed!' });
         }
       }
+    }
+  
     } catch (error) {
       console.error('Error picking video:', error);
       Toast.show({ type: 'error', text1: 'Error picking video!' });
