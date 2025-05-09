@@ -32,9 +32,9 @@ export default function RootLayout() {
       <Toast config={toastConfig} />
       <Stack.Screen name="index" /> {/* Will be your splash/welcome screen */}
       <Stack.Screen name="login" /> {/* Login screen */}
-      <Stack.Screen name="admin/[adminid]" /> {/* Admin screen with dynamic parameter */}
-      <Stack.Screen name="doctor/[doctorid]" /> 
-      <Stack.Screen name="patient/[patientid]" /> {/* Patient screen with dynamic parameter */}
+      <Stack.Screen name="admin" /> {/* Admin screen with dynamic parameter */}
+      <Stack.Screen name="doctor" /> 
+      <Stack.Screen name="patient" /> {/* Patient screen with dynamic parameter */}
       {/* <Stack.Screen name="dashboard" /> Dashboard if needed */}
     </Stack>
   );
