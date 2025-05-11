@@ -9,6 +9,9 @@ export default function DoctorPage() {
   const { doctorid } = useLocalSearchParams();
   const [doctorData, setDoctorData] = useState(null);
   const [patients, setPatients] = useState([]);
+  const [patientCount, setPatientCount] = useState(null)
+  const [appointments, setAppointments] = useState([]);
+
 
   const fetchPatients = async () => {
     try {
@@ -16,10 +19,36 @@ export default function DoctorPage() {
       const querySnapshot = await getDocs(q);
       const patientList = querySnapshot.docs.map(doc => doc.data());
       setPatients(patientList);
+      setPatientCount(patientList.length);
     } catch (error) {
       console.error('Error fetching patients:', error);
     }
   };
+
+  const fetchAppointments = async () => {
+    try {
+      const q1 = query(collection(db, 'Doctor_Table'), where('user_id', '==', doctorid));
+      const querySnapshot = await getDocs(q1);
+  
+      if (!querySnapshot.empty) {
+        const doctorDoc = querySnapshot.docs[0];
+        const doctorInternalId = doctorDoc.data().id;
+  
+        const appointmentQuery = query(
+          collection(db, 'Appointment_Table'),
+          where('doctor_id', '==', doctorInternalId)
+        );
+  
+        const appointmentsSnapshot = await getDocs(appointmentQuery);
+        const appointmentList = appointmentsSnapshot.docs.map(doc => doc.data());
+  
+        setAppointments(appointmentList);
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
+  };
+  
 
   useEffect(() => {
     const fetchDoctorData = async () => {
@@ -36,6 +65,7 @@ export default function DoctorPage() {
 
     fetchDoctorData();
     fetchPatients();
+    fetchAppointments();
   }, [doctorid]);
 
 
@@ -59,6 +89,18 @@ export default function DoctorPage() {
     </View>
   );
 
+  const renderAppointmentCard = ({ item }) => (
+    <View style={styles.appointmentCard}>
+      <Text style={styles.patientText}>Patient ID: {item.patient_id}</Text>
+      <Text style={styles.patientText}>Doctor: {item.doctor_name}</Text>
+      <Text style={styles.patientText}>Hospital: {item.hospital}</Text>
+      <Text style={styles.patientText}>Date/Time: {new Date(item.date_time).toLocaleString()}</Text>
+      <Text style={styles.patientText}>Status: {item.payment_status}</Text>
+      <Text style={styles.patientText}>Price: ${item.price}</Text>
+    </View>
+  );
+  
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -76,7 +118,7 @@ export default function DoctorPage() {
               <Text style={styles.detailText}>
                 Hospital: {doctorData.working_hospitals.join(', ')}
               </Text>
-              <Text style={styles.detailText}>No. of patients: 10</Text>
+              <Text style={styles.detailText}>No. of patients: {patientCount}</Text>
               <Text style={styles.detailText}>Work duration: 9.00 AM to 5.00 PM</Text>
             </>
           )}
@@ -91,7 +133,15 @@ export default function DoctorPage() {
             scrollEnabled={false}
           />
         </View>
-
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Your Appointments</Text>
+            <FlatList
+               data={appointments}
+               keyExtractor={(item, index) => index.toString()}
+               renderItem={renderAppointmentCard}
+               scrollEnabled={false}
+             />
+        </View>
         <TouchableOpacity
           onPress={() =>
             router.push({
@@ -189,4 +239,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
      fontFamily: 'outfit_bold'
   },
+  appointmentCard: {
+    backgroundColor: '#fff8e1',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  
 });

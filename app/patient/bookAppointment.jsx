@@ -1,11 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
+import axios from 'axios';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { db } from '../../configs/firebaseConfig';
+
+// Set this to your backend API URL
+const API_BASE_URL = 'http://192.168.63.173:5000';
 
 const bookAppointment = () => {
   const { patientid } = useLocalSearchParams();
@@ -13,14 +18,27 @@ const bookAppointment = () => {
 
   const [doctors, setDoctors] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedHospital, setSelectedHospital] = useState('');
   const [DateAndTime, setDateAndTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // PayPal related states
+  const [approvalUrl, setApprovalUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [appointmentDetails, setAppointmentDetails] = useState(null);
 
   useEffect(() => {
     fetchDoctors();
   }, []);
+
+  useEffect(() => {
+    if (selectedDocId && doctors.length > 0) {
+      const doctor = doctors.find(doc => doc.id === selectedDocId);
+      setSelectedDoctor(doctor);
+    }
+  }, [selectedDocId, doctors]);
 
   const fetchDoctors = async () => {
     try {
@@ -33,31 +51,93 @@ const bookAppointment = () => {
       console.log('Doctors:', doctors);
     } catch (error) {
       console.error('Error fetching doctors:', error);
+      Alert.alert('Error', 'Failed to fetch doctors. Please try again.');
     }
   };
 
-  const HandleAddAppointment = async () => {
+  const handlePayment = async () => {
     if (!selectedDocId || !selectedHospital) {
-      alert('Please select a doctor and a hospital/clinic.');
+      Alert.alert('Missing Information', 'Please select a doctor and a hospital/clinic.');
       return;
     }
 
+    // Find selected doctor to get price info (assuming doctor data has a price field)
+    const doctor = doctors.find(doc => doc.id === selectedDocId);
+    const appointmentPrice = doctor?.price || 10.00; // Default to $10 if price not found
+    
+    // Save appointment details for use after payment
+    const appointmentData = {
+      patient_id: patientid,
+      doctor_id: selectedDocId,
+      doctor_name: doctor?.name || 'Unknown Doctor',
+      hospital: selectedHospital,
+      date_time: DateAndTime.toISOString(),
+      price: appointmentPrice,
+      payment_status: 'pending',
+      created_at: new Date().toISOString()
+    };
+    
+    setAppointmentDetails(appointmentData);
+
+    // Start payment process
+    setLoading(true);
     try {
-      await addDoc(collection(db, 'Appointment_Table'), {
-        patient_id: patientid,
-        doctor_id: selectedDocId,
-        hospital: selectedHospital,
-        date_time: DateAndTime.toISOString(),
+      console.log('Starting payment process for $' + appointmentPrice);
+      
+      // You can pass the price and other details to your backend
+      const res = await axios.post(`${API_BASE_URL}/create-order`, {
+        amount: appointmentPrice.toString(),
+        currency: 'USD',
+        description: `Appointment with ${doctor?.name || 'Doctor'} at ${selectedHospital}`,
+        appointmentId: Date.now().toString() // Use a temporary ID for reference
       });
-      alert('Appointment booked successfully!');
-      router.push(`/patient/${patientid}`);
+      
+      console.log('PayPal order created:', res.data);
+      
+      if (res.data && res.data.approve) {
+        setApprovalUrl(res.data.approve);
+      } else {
+        throw new Error('Invalid response from payment server');
+      }
+    } catch (error) {
+      console.error('PayPal error:', error.response?.data || error.message);
+      Alert.alert(
+        'Payment Error', 
+        'There was a problem connecting to the payment system. Please try again later.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveAppointment = async () => {
+    try {
+      console.log('Saving appointment to database:', appointmentDetails);
+      
+      // Update payment status
+      const appointmentWithPayment = {
+        ...appointmentDetails,
+        payment_status: 'completed',
+        payment_date: new Date().toISOString()
+      };
+      
+      const docRef = await addDoc(collection(db, 'Appointment_Table'), appointmentWithPayment);
+      console.log('Appointment saved with ID:', docRef.id);
+      
+      Alert.alert(
+        'Success', 
+        'Your appointment has been booked successfully!',
+        [{ text: 'OK', onPress: () => router.push(`/patient/${patientid}`) }]
+      );
     } catch (error) {
       console.error('Error booking appointment:', error);
-      alert('Failed to book appointment. Please try again.');
+      Alert.alert(
+        'Error', 
+        'Failed to save your appointment. Please contact support.',
+        [{ text: 'OK', onPress: () => router.push(`/patient/${patientid}`) }]
+      );
     }
- 
-  }
-  
+  };
 
   const hospitals = ['City Hospital', 'Green Clinic', 'Sunrise Medical Centre', 'Carewell Hospital'];
 
@@ -86,6 +166,99 @@ const bookAppointment = () => {
     }
     setShowTimePicker(false);
   };
+
+  // Render WebView when we have approval URL
+  if (approvalUrl) {
+    return (
+      <View style={{ flex: 1 }}>
+        <WebView
+          source={{ uri: approvalUrl }}
+          style={{ flex: 1 }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="#2384f1" />
+              <Text style={{ marginTop: 10 }}>Loading PayPal...</Text>
+            </View>
+          )}
+          onNavigationStateChange={(navState) => {
+            console.log("WebView navigating to:", navState.url);
+            
+            // Handle custom app deep links or return URLs
+            if (navState.url.includes('yourapp://payment-success')) {
+              console.log('Deep link success detected');
+              setApprovalUrl(null);
+              saveAppointment();
+              return;
+            }
+            
+            if (navState.url.includes('yourapp://payment-cancelled') || 
+                navState.url.includes('yourapp://payment-error')) {
+              console.log('Deep link cancellation detected');
+              setApprovalUrl(null);
+              Alert.alert('Payment Cancelled', 'Your payment was cancelled or unsuccessful.');
+              return;
+            }
+            
+            // Handle payment completion or cancellation scenarios
+            
+            // Payment canceled - Common cancel URL patterns
+            if (navState.url.includes('cancel') || 
+                navState.url.includes('paypal.com/checkoutnow/error')) {
+              console.log("Payment canceled");
+              setApprovalUrl(null);
+              Alert.alert('Payment Cancelled', 'You cancelled the payment process.');
+              return;
+            }
+            
+            // Payment success - Look for multiple possible success patterns
+            if (navState.url.includes('success') || 
+                navState.url.includes('capture-order') ||
+                navState.url.includes('approved') ||
+                navState.url.includes('completed') ||
+                navState.url.includes('paypal.com/webapps/hermes/token/payment-success')) {
+              console.log("Payment success detected");
+              // Add slight delay to ensure all PayPal processes complete
+              setTimeout(() => {
+                setApprovalUrl(null);
+                saveAppointment();
+              }, 1000);
+              return;
+            }
+            
+            // Debug any redirect loops by logging URL patterns
+            if (navState.url.includes('continue') || navState.url.includes('review')) {
+              console.log("On review/continue page:", navState.url);
+            }
+          }}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.error('WebView error: ', nativeEvent);
+            Alert.alert('Error', 'Error loading PayPal. Please try again later.');
+            setApprovalUrl(null);
+          }}
+        />
+        <TouchableOpacity 
+          style={{
+            position: 'absolute', 
+            top: 40, 
+            left: 20, 
+            backgroundColor: 'rgba(255,255,255,0.8)',
+            padding: 10,
+            borderRadius: 20
+          }}
+          onPress={() => {
+            setApprovalUrl(null);
+            Alert.alert('Payment Cancelled', 'You cancelled the payment process.');
+          }}
+        >
+          <Text style={{ fontWeight: 'bold' }}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
@@ -164,6 +337,7 @@ const bookAppointment = () => {
             mode="date"
             display="default"
             onChange={handleDateChange}
+            minimumDate={new Date()} // Don't allow booking in the past
           />
         )}
         {showTimePicker && (
@@ -174,10 +348,30 @@ const bookAppointment = () => {
             onChange={handleTimeChange}
           />
         )}
-        {/* Book Appointment Button */}
-        <TouchableOpacity style={styles.button} onPress={() => HandleAddAppointment()}>
-          <Text style={styles.buttonText}>Book Appointment</Text>
-        </TouchableOpacity>
+        
+        {/* Show appointment price if a doctor is selected */}
+        {selectedDoctor && (
+          <View style={styles.priceContainer}>
+            <Text style={styles.priceLabel}>Appointment Price:</Text>
+            <Text style={styles.priceValue}>${selectedDoctor?.price || '10.00'}</Text>
+          </View>
+        )}
+        
+        {/* Book Appointment Button with Payment */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2384f1" />
+            <Text style={styles.loadingText}>Setting up payment...</Text>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={styles.payButton} 
+            onPress={handlePayment}
+          >
+            <Ionicons name="card-outline" size={24} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.buttonText}>Pay and Book Appointment</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -212,9 +406,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 15,
   },
+  payButton: {
+    backgroundColor: '#2384f1',
+    paddingVertical: 12,
+    borderRadius: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 15,
+    marginTop: 20,
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontFamily: 'outfit_bold',
   },
+  loadingContainer: {
+    alignItems: 'center',
+    margin: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontFamily: 'outfit_regular',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: '#fff',
+    padding: 15,
+    marginHorizontal: 20,
+    borderRadius: 10,
+  },
+  priceLabel: {
+    fontSize: 16,
+    fontFamily: 'outfit_regular',
+    marginRight: 10,
+  },
+  priceValue: {
+    fontSize: 18,
+    fontFamily: 'outfit_bold',
+    color: '#2384f1',
+  }
 });

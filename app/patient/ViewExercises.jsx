@@ -50,33 +50,44 @@ const fetchExcercises = async () => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    // Find today's workout
-    const todayWorkout = workouts.find(workout => workout.date === today);
+    // Get today's workouts (can be multiple)
+    const todayWorkouts = workouts.filter(workout => workout.date === today);
 
-    if (!todayWorkout) {
-      console.log('No workout scheduled for today.');
+    if (todayWorkouts.length === 0) {
+      console.log('No workouts scheduled for today.');
       return;
     }
 
-    const todayExercises = todayWorkout.exercises;
-    console.log("Today's Exercises:", todayExercises);
+    const allExercises = [];
 
-    const exercisePromises = todayExercises.map(async (exercise) => {
-      const docRef = doc(db, 'Exercise_Table', exercise.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return docSnap.data();
-      } else {
-        console.log(`No exercise found for ID: ${exercise.id}`);
-        return null;
+    for (let workout of todayWorkouts) {
+      for (let exercise of workout.exercises) {
+        const docRef = doc(db, 'Exercise_Table', exercise.id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+
+          // Determine if the exercise is watched
+          const isWatched = patient.watchedExercise?.some(
+            (watched) =>
+              watched.exercise_id === exercise.id &&
+              watched.workout_id === workout.id &&
+              watched.date === today
+          );
+
+          allExercises.push({
+            ...data,
+            video_name: exercise.video_name || data.video_name,
+            id: exercise.id,
+            workout_id: workout.id,
+            watched: !!isWatched,
+          });
+        }
       }
-    });
+    }
 
-    const exerciseDetails = await Promise.all(exercisePromises);
-    const validExercises = exerciseDetails.filter(ex => ex !== null);
-
-    console.log('Exercise Details:', validExercises);
-    setExercises(validExercises);
+    setExercises(allExercises);
   } catch (error) {
     console.error('Error fetching exercises:', error);
   }
@@ -85,10 +96,9 @@ const fetchExcercises = async () => {
 const handleVideoPress = async (videoUrl, videoName) => {
   try {
     const now = new Date();
-    const date = now.toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-    const time = now.toTimeString().split(' ')[0]; // Get current time in HH:MM:SS format
+    const date = now.toISOString().split('T')[0];
+    const time = now.toTimeString().split(' ')[0];
 
-    // Query the Patient_Table to find the document with the matching user_id
     const q = query(
       collection(db, 'Patient_Table'),
       where('user_id', '==', patientid)
@@ -100,34 +110,58 @@ const handleVideoPress = async (videoUrl, videoName) => {
       return;
     }
 
-    // Get the document reference for the first matching document
     const patientDocRef = querySnapshot.docs[0].ref;
-
-    // Get the current patient data
     const patientData = querySnapshot.docs[0].data();
     const currentWatchedExercises = patientData.watchedExercise || [];
 
-    // Check if the video is already marked as watched using video_url
+    // Loop over workouts to find matching exercise
+    let matchedWorkoutId = null;
+    let matchedExerciseId = null;
+
+    for (let workout of patientData.workouts || []) {
+      for (let ex of workout.exercises || []) {
+        if (ex.video_name === videoName || ex.video_url === videoUrl) {
+          matchedWorkoutId = workout.id;
+          matchedExerciseId = ex.id;
+          break;
+        }
+      }
+      if (matchedWorkoutId) break;
+    }
+
+    if (!matchedWorkoutId || !matchedExerciseId) {
+      console.warn('Workout or exercise ID not found for the selected video.');
+    }
+
+    // Check if already watched
     const isAlreadyWatched = currentWatchedExercises.some(
       (entry) => entry.videoUrl === videoUrl
     );
 
-    if (isAlreadyWatched) {
-      console.log(`Video ${videoUrl} is already marked as watched.`);
-      return;
+    if (!isAlreadyWatched) {
+      // Only update if not already watched
+      await updateDoc(patientDocRef, {
+        watchedExercise: arrayUnion({
+          videoUrl,
+          videoName,
+          date,
+          time,
+          workout_id: matchedWorkoutId || 'unknown',
+          exercise_id: matchedExerciseId || 'unknown',
+        }),
+      });
+
+      console.log(`Marked watched: ${videoUrl} under workout ${matchedWorkoutId} and exercise ${matchedExerciseId}`);
+
+      setWatchedExercise((prev) => [
+        ...prev,
+        { videoUrl, videoName, date, time, workout_id: matchedWorkoutId, exercise_id: matchedExerciseId },
+      ]);
+    } else {
+      console.log(`Video ${videoUrl} already marked as watched.`);
     }
 
-    // Update the watchedExercise field in the Patient_Table
-    await updateDoc(patientDocRef, {
-      watchedExercise: arrayUnion({ videoUrl, videoName, date, time }), // Add videoUrl, videoName, date, and time
-    });
-
-    console.log(`Video ${videoUrl} marked as watched on ${date} at ${time}.`);
-
-    // Update the watchedExercise state locally
-    setWatchedExercise((prev) => [...prev, { videoUrl, videoName, date, time }]);
-
-    // Navigate to the VideoPlayer component
+    // Navigate to video
     router.push({
       pathname: '/patient/VideoPlayer',
       params: { videoUrl, videoName },
@@ -152,25 +186,32 @@ const handleVideoPress = async (videoUrl, videoName) => {
           </View>
       <View style={styles.container}>
         <Text style={styles.label}>Today's Exercises</Text>
-        {exercises.map((exercise, index) => {
-  console.log('Exercise:', exercise);
-  return (
-    <TouchableOpacity
-      key={index}
-      style={styles.exerciseVideoContainer}
-      onPress={() =>
-        handleVideoPress(
-          exercise.video_url,
-          exercise.video_name || `Exercise ${index + 1}`
-        )
-      }
-    >
-      <Text style={{ fontFamily: 'outfit_regular', fontSize: 16 }}>
-        {exercise.video_name || `Exercise ${index + 1}`}
-      </Text>
-    </TouchableOpacity>
-  );
-})}
+        {exercises.map((exercise, index) => (
+  <TouchableOpacity
+    key={index}
+    style={[
+      styles.exerciseVideoContainer,
+      {
+        borderLeftWidth: 5,
+        borderLeftColor: exercise.watched ? 'green' : 'gray',
+      },
+    ]}
+    onPress={() =>
+      handleVideoPress(
+        exercise.video_url,
+        exercise.video_name || `Exercise ${index + 1}`
+      )
+    }
+  >
+    <Text style={{ fontFamily: 'outfit_regular', fontSize: 16 }}>
+      {exercise.video_name || `Exercise ${index + 1}`}
+    </Text>
+    <Text style={{ color: 'gray',  fontFamily: 'outfit_regular' }}>
+      {exercise.watched ? 'Watched ✅' : 'Not Watched ❌'}
+    </Text>
+  </TouchableOpacity>
+))}
+
 
 
       </View>
