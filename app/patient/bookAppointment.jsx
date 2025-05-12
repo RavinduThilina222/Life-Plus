@@ -28,6 +28,7 @@ const bookAppointment = () => {
   const [approvalUrl, setApprovalUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [appointmentDetails, setAppointmentDetails] = useState(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
     fetchDoctors();
@@ -39,6 +40,13 @@ const bookAppointment = () => {
       setSelectedDoctor(doctor);
     }
   }, [selectedDocId, doctors]);
+
+  // Effect to save appointment only after payment is completed
+  useEffect(() => {
+    if (paymentCompleted && appointmentDetails) {
+      saveAppointment();
+    }
+  }, [paymentCompleted]);
 
   const fetchDoctors = async () => {
     try {
@@ -61,11 +69,11 @@ const bookAppointment = () => {
       return;
     }
 
-    // Find selected doctor to get price info (assuming doctor data has a price field)
+    // Find selected doctor to get price info
     const doctor = doctors.find(doc => doc.id === selectedDocId);
     const appointmentPrice = doctor?.price || 10.00; // Default to $10 if price not found
     
-    // Save appointment details for use after payment
+    // Prepare appointment details for after payment
     const appointmentData = {
       patient_id: patientid,
       doctor_id: selectedDocId,
@@ -78,13 +86,13 @@ const bookAppointment = () => {
     };
     
     setAppointmentDetails(appointmentData);
+    setPaymentCompleted(false); // Reset payment status
 
     // Start payment process
     setLoading(true);
     try {
       console.log('Starting payment process for $' + appointmentPrice);
       
-      // You can pass the price and other details to your backend
       const res = await axios.post(`${API_BASE_URL}/create-order`, {
         amount: appointmentPrice.toString(),
         currency: 'USD',
@@ -167,6 +175,14 @@ const bookAppointment = () => {
     setShowTimePicker(false);
   };
 
+  // Handle successful payment completion
+  const handlePaymentSuccess = () => {
+    console.log("Payment successful - processing appointment");
+    setApprovalUrl(null);
+    setPaymentCompleted(true);
+    // saveAppointment will be triggered by the useEffect when paymentCompleted becomes true
+  };
+
   // Render WebView when we have approval URL
   if (approvalUrl) {
     return (
@@ -189,8 +205,7 @@ const bookAppointment = () => {
             // Handle custom app deep links or return URLs
             if (navState.url.includes('yourapp://payment-success')) {
               console.log('Deep link success detected');
-              setApprovalUrl(null);
-              saveAppointment();
+              handlePaymentSuccess();
               return;
             }
             
@@ -202,9 +217,7 @@ const bookAppointment = () => {
               return;
             }
             
-            // Handle payment completion or cancellation scenarios
-            
-            // Payment canceled - Common cancel URL patterns
+            // Handle payment cancellation scenarios
             if (navState.url.includes('cancel') || 
                 navState.url.includes('paypal.com/checkoutnow/error')) {
               console.log("Payment canceled");
@@ -213,17 +226,17 @@ const bookAppointment = () => {
               return;
             }
             
-            // Payment success - Look for multiple possible success patterns
+            // Handle payment success scenarios
             if (navState.url.includes('success') || 
                 navState.url.includes('capture-order') ||
                 navState.url.includes('approved') ||
                 navState.url.includes('completed') ||
                 navState.url.includes('paypal.com/webapps/hermes/token/payment-success')) {
               console.log("Payment success detected");
+              
               // Add slight delay to ensure all PayPal processes complete
               setTimeout(() => {
-                setApprovalUrl(null);
-                saveAppointment();
+                handlePaymentSuccess();
               }, 1000);
               return;
             }
