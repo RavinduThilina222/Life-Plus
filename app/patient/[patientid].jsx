@@ -87,21 +87,20 @@ const PatientDashboard = () => {
     for (const workout of workouts) {
       if (workout.date) {
         const [year, month, day] = workout.date.split('-').map(Number);
-        const workoutDate = new Date(Date.now() + 2 * 60 * 1000); // 3 minutes from now
+        const workoutDate = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes from now
+  
         await Notifications.scheduleNotificationAsync({
           content: {
             title: 'Workout Reminder',
-            body: `You have "${workout.title || 'a workout'}" scheduled!`,
+            body: `You have "${workout.title || 'a workout'}" scheduled today at 9:30 AM`,
             sound: 'default',
           },
-          trigger: {
-            seconds: 180, // 3 minutes
-            repeats: true,
-          },
-        });        
+          trigger: workoutDate,
+        });
       }
     }
   };
+  
   
   
 
@@ -110,20 +109,15 @@ const PatientDashboard = () => {
       <View style={styles.header}>
         <Text style={styles.headerText}>Patient Dashboard</Text>
       </View>
-
       <Text style={styles.welcomeText}>Welcome! {Patient?.name}</Text>
-
       <Text style={styles.idText}>
         Your ID is {Patient?.user_id}
       </Text>
-
       <View style={styles.subContainer}>
         <Text style={styles.subContainerText}>Date you visited your therapist</Text>
         <Text style={styles.subContainerText2}>12th May 2025</Text>
-
         <Text style={styles.subContainerText}>Next Appointment</Text>
         <Text style={styles.subContainerText2}>Second Week of June</Text>
-
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
@@ -136,7 +130,6 @@ const PatientDashboard = () => {
           <Text style={styles.buttonText}>Book Appointment</Text>
         </TouchableOpacity>
       </View>
-
       {/* Vitals Section */}
       <View style={styles.vitalsContainer}>
         <View style={styles.metricContainer}>
